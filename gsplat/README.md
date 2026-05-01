@@ -2,6 +2,13 @@
 
 **A Mac (Apple Silicon / MPS) port of [gsplat](https://github.com/nerfstudio-project/gsplat).**
 
+![sample mpsplat render](../media/orb_render.png)
+
+A flythrough of the same scene, rendered after a real mpsplat training run on an M-series Mac:
+
+https://github.com/zacsmms/mpsplat/raw/main/media/orb_flythrough.mp4
+
+
 This repository is a fork of the excellent [gsplat](https://github.com/nerfstudio-project/gsplat)
 library by the Nerfstudio team and collaborators (UC Berkeley, NVIDIA,
 ShanghaiTech University, Amazon, Meta, IIIT, LumaAI, SpectacularAI, Aalto

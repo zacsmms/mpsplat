@@ -6,10 +6,15 @@ and at the end you get a **3D model you can fly through in your browser**.
 
 ## What you'll get
 
-A fluffy, lifelike 3D capture of whatever you filmed, viewable from any
-angle in real time. Same idea as a 3D photograph, except you can walk
-around it, rotate it, and zoom in. Examples (other people's captures,
-not yours) at <https://playcanvas.com/supersplat/editor>.
+![sample mpsplat render](media/orb_render.png)
+
+A free-viewpoint 3D capture of whatever you filmed — same idea as a 3D
+photograph, except you can orbit, zoom, and fly through it. The image
+above is a single frame from a real mpsplat training run. The
+flythrough video below is what an automatic camera arc looks like at
+the end of training:
+
+https://github.com/zacsmms/mpsplat/raw/main/media/orb_flythrough.mp4
 
 You'll go from this:
 

@@ -8,10 +8,17 @@ results/
 
 # stage backups (developer-local snapshots)
 st_*.zip
-*.MOV
-*.mov
-*.mp4
-*.MP4
+
+# user video captures — only ignore in data/ and at the project root
+# so we DO track the media/ directory used for README hero clips.
+/*.MOV
+/*.mov
+/*.mp4
+/*.MP4
+data/**/*.MOV
+data/**/*.mov
+data/**/*.mp4
+data/**/*.MP4
 
 # editor / OS junk
 .DS_Store
