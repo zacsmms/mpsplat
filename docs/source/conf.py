@@ -19,8 +19,8 @@ exec(open("../../gsplat/version.py", "r").read())
 # -- Project information
 
 project = "gsplat"
-copyright = "2023, nerfstudio team"
-author = "nerfstudio"
+copyright = "2023, Kanazawa AI Research (KAIR)"
+author = "Kanazawa AI Research (KAIR)"
 
 # Formatting!
 #     0.1.30 => v0.1.30

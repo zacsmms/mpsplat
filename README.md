@@ -10,11 +10,12 @@ https://github.com/zacsmms/mpsplat/raw/main/media/orb_flythrough.mp4
 
 
 This repository is a fork of the excellent [gsplat](https://github.com/nerfstudio-project/gsplat)
-library by the Nerfstudio team and collaborators (UC Berkeley, NVIDIA,
-ShanghaiTech University, Amazon, Meta, IIIT, LumaAI, SpectacularAI, Aalto
-University, CMU, and others). The original library is CUDA-only and does
-not run on Macs. **mpsplat exists for one reason: to make gsplat work on
-Apple Silicon, where most of us actually carry a GPU around.**
+library by **Kanazawa AI Research (KAIR)** at UC Berkeley and
+collaborators (NVIDIA, ShanghaiTech University, Amazon, Meta, IIIT,
+LumaAI, SpectacularAI, Aalto University, CMU, and others). The
+original library is CUDA-only and does not run on Macs. **mpsplat
+exists for one reason: to make gsplat work on Apple Silicon, where most
+of us actually carry a GPU around.**
 
 > mpsplat is **not** an attempt to replace gsplat or claim any of its
 > design or research credit. All of the math, the algorithms, the
