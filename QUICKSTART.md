@@ -49,8 +49,8 @@ cd mpsplat
 
 # create the Python environment
 uv venv --python 3.13
-uv pip install --python .venv/bin/python -e gsplat
-uv pip install --python .venv/bin/python -r gsplat/examples/requirements.txt
+uv pip install --python .venv/bin/python -e .
+uv pip install --python .venv/bin/python -r examples/requirements.txt
 uv pip install --python .venv/bin/python "imageio[ffmpeg]"
 ```
 
@@ -61,7 +61,7 @@ command every time. Paste it into your terminal:
 cat >> ~/.zshrc <<EOF
 export MPSPLAT_ROOT="$(pwd)"
 mpy() {
-  PYTHONPATH="\$MPSPLAT_ROOT/gsplat:\$MPSPLAT_ROOT/gsplat/examples" \\
+  PYTHONPATH="\$MPSPLAT_ROOT:\$MPSPLAT_ROOT/examples" \\
     "\$MPSPLAT_ROOT/.venv/bin/python" -P "\$@"
 }
 EOF

@@ -2,7 +2,7 @@
 
 **A Mac (Apple Silicon / MPS) port of [gsplat](https://github.com/nerfstudio-project/gsplat).**
 
-![sample mpsplat render](../media/orb_render.png)
+![sample mpsplat render](media/orb_render.png)
 
 A flythrough of the same scene, rendered after a real mpsplat training run on an M-series Mac:
 
@@ -64,8 +64,8 @@ brew install uv ffmpeg colmap            # colmap & ffmpeg are for capture pipel
 git clone https://github.com/zacsmms/mpsplat.git
 cd mpsplat
 uv venv --python 3.13
-uv pip install --python .venv/bin/python -e gsplat
-uv pip install --python .venv/bin/python -r gsplat/examples/requirements.txt
+uv pip install --python .venv/bin/python -e .
+uv pip install --python .venv/bin/python -r examples/requirements.txt
 uv pip install --python .venv/bin/python "imageio[ffmpeg]"
 ```
 
@@ -74,7 +74,7 @@ favour of `torch.mps.compile_shader`, which JIT-compiles `.metal` files
 the first time each kernel is invoked.
 
 For the end-to-end "phone footage → splat → viewer" walk-through, see
-the top-level [`QUICKSTART.md`](../QUICKSTART.md).
+the [`QUICKSTART.md`](QUICKSTART.md).
 
 ## Status
 
