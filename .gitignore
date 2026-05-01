@@ -1,0 +1,21 @@
+# venv
+.venv/
+venv/
+
+# user captures and training outputs
+data/
+results/
+
+# stage backups (developer-local snapshots)
+st_*.zip
+*.MOV
+*.mov
+*.mp4
+*.MP4
+
+# editor / OS junk
+.DS_Store
+.vscode/
+.idea/
+__pycache__/
+*.pyc

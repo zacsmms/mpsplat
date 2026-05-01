@@ -1,0 +1,74 @@
+name: Core Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test-mps:
+    runs-on: macos-14   # Apple Silicon (M-series) — has MPS support
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install package + test deps
+        env:
+          # Strip macOS Sequoia's com.apple.provenance xattr that Python 3.13's
+          # site.py refuses to load .pth files with. (Workflow runners may or
+          # may not have it, but stripping is harmless.)
+          PYTHONSAFEPATH: "1"
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest
+          pip install -e .
+          # Tests that touch the trainer pull these via examples/*.py, but
+          # core tests only need the package proper.
+
+      - name: Strip provenance xattrs (macOS Sequoia)
+        run: |
+          # Python 3.13 silently skips .pth files carrying com.apple.provenance.
+          # The editable install puts a .pth file in site-packages; clear it.
+          PTH=$(python -c "import site,glob,os; p=site.getsitepackages()[0]; print(glob.glob(os.path.join(p,'__editable__.gsplat-*.pth'))[0])")
+          xattr -c "$PTH" 2>/dev/null || true
+          # Re-write the file to drop any sticky xattrs that survive xattr -c.
+          python - <<'PY'
+          import site, glob, os
+          p = site.getsitepackages()[0]
+          for pth in glob.glob(os.path.join(p, '__editable__.gsplat-*.pth')):
+              with open(pth) as f:
+                  body = f.read()
+              os.remove(pth)
+              with open(pth, 'w') as f:
+                  f.write(body)
+          PY
+
+      - name: Run tests on MPS
+        run: pytest tests/ --device mps -v
+
+  test-cpu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install package + test deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -e .
+      - name: Run tests on CPU
+        run: pytest tests/ --device cpu -v
