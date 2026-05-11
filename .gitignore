@@ -143,3 +143,8 @@ data/**/*.MP4
 
 # editor / OS junk not already covered
 .idea/
+# local-only agent context (machine paths, working notes)
+AGENTS.md
+memory/
+# local copies of reference papers
+rade_gs.pdf
