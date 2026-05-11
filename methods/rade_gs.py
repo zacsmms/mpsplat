@@ -386,14 +386,15 @@ def rasterization_rade_gs(
             backgrounds=backgrounds,
             **common_kwargs,
         )
-        # Pass 2: feature rendering with zero background. ``rasterization``
-        # returns Σᵢ wᵢ · featᵢ + (1 − Σᵢ wᵢ) · bg, so bg = 0 gives the same
-        # alpha-weighted sum the ``extra_signals`` path produces.
-        zero_bg = torch.zeros(C, extras.shape[-1], device=means.device, dtype=dtype)
+        # Pass 2: feature rendering with no background. ``rasterization``
+        # returns Σᵢ wᵢ · featᵢ + (1 − Σᵢ wᵢ) · bg; with ``backgrounds=None``
+        # gsplat defaults to zero, matching the ``extra_signals`` semantics.
+        # (Don't construct a zero tensor ourselves — upstream gsplat versions
+        # disagree on the exact shape expected here.)
         blended, _, _ = rasterization(
             colors=extras,
             sh_degree=None,
-            backgrounds=zero_bg,
+            backgrounds=None,
             **common_kwargs,
         )
 
