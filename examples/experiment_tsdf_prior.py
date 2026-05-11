@@ -57,11 +57,19 @@ import tyro
 from torch import Tensor
 
 # Make this script runnable from repo root: `python examples/experiment_tsdf_prior.py ...`
+# We put examples/ first so that `from datasets.colmap import ...` resolves
+# to our local package, not the HuggingFace `datasets` package that ships
+# with Colab. (examples/datasets/__init__.py promotes it to a regular package
+# so it beats HF's namespace lookup.)
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_REPO_ROOT))
 sys.path.insert(0, str(_REPO_ROOT / "examples"))
+for _k in list(sys.modules):
+    if _k == "datasets" or _k.startswith("datasets."):
+        del sys.modules[_k]
 
 from datasets.colmap import Dataset, Parser  # noqa: E402
+from utils import knn, rgb_to_sh, set_random_seed  # noqa: E402
 from gsplat.strategy import DefaultStrategy  # noqa: E402
 from methods.rade_gs import rasterization_rade_gs  # noqa: E402
 from methods.tsdf_prior import (  # noqa: E402
@@ -70,7 +78,6 @@ from methods.tsdf_prior import (  # noqa: E402
     refresh_tsdf_from_views,
     tsdf_prior_loss,
 )
-from utils import knn, rgb_to_sh, set_random_seed  # noqa: E402
 
 try:
     from torchmetrics.image import (
