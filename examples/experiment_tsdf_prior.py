@@ -119,6 +119,7 @@ class Config:
     init_extent: float = 3.0
 
     # ---- Densification (DefaultStrategy) ----
+    densify: bool = True                       # set False if upstream gsplat strategy is incompatible
     prune_opa: float = 0.05
     grow_grad2d: float = 2e-4
     grow_scale3d: float = 0.01
@@ -268,19 +269,24 @@ def train_method(
     (out_dir / "renders").mkdir(exist_ok=True)
 
     splats, optimizers, scene_scale = _build_splats(parser, cfg, device)
-    strategy = DefaultStrategy(
-        prune_opa=cfg.prune_opa,
-        grow_grad2d=cfg.grow_grad2d,
-        grow_scale3d=cfg.grow_scale3d,
-        prune_scale3d=cfg.prune_scale3d,
-        refine_start_iter=cfg.refine_start_iter,
-        refine_stop_iter=cfg.refine_stop_iter,
-        reset_every=cfg.reset_every,
-        refine_every=cfg.refine_every,
-        absgrad=cfg.absgrad,
-    )
-    strategy.check_sanity(splats, optimizers)
-    strategy_state = strategy.initialize_state(scene_scale=scene_scale)
+    if cfg.densify:
+        strategy = DefaultStrategy(
+            prune_opa=cfg.prune_opa,
+            grow_grad2d=cfg.grow_grad2d,
+            grow_scale3d=cfg.grow_scale3d,
+            prune_scale3d=cfg.prune_scale3d,
+            refine_start_iter=cfg.refine_start_iter,
+            refine_stop_iter=cfg.refine_stop_iter,
+            reset_every=cfg.reset_every,
+            refine_every=cfg.refine_every,
+            absgrad=cfg.absgrad,
+        )
+        strategy.check_sanity(splats, optimizers)
+        strategy_state = strategy.initialize_state(scene_scale=scene_scale)
+    else:
+        strategy = None
+        strategy_state = None
+        print("  densification disabled (--no_densify)")
 
     # TSDF prior (only allocated for the tsdf_prior run).
     use_tsdf = method == "tsdf_prior"
@@ -347,7 +353,8 @@ def train_method(
         normals = out["render_normals"]                    # (1, H, W, 3)
 
         # Strategy hook: needs info dict with means2d gradients etc.
-        strategy.step_pre_backward(splats, optimizers, strategy_state, step, out["meta"])
+        if strategy is not None:
+            strategy.step_pre_backward(splats, optimizers, strategy_state, step, out["meta"])
 
         # ---- Loss ----
         gt = image
@@ -371,7 +378,8 @@ def train_method(
         loss.backward()
 
         # ---- Strategy post-backward (densify / prune) ----
-        strategy.step_post_backward(splats, optimizers, strategy_state, step, out["meta"])
+        if strategy is not None:
+            strategy.step_post_backward(splats, optimizers, strategy_state, step, out["meta"])
 
         for opt in optimizers.values():
             opt.step()
