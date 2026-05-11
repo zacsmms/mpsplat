@@ -59,12 +59,19 @@ from typing import Dict, Literal, Optional, Tuple
 import torch
 from torch import Tensor
 
+import inspect as _inspect
+
 from gsplat import quat_scale_to_covar_preci, rasterization
 
 
 # Channel layout for the six extra-signal channels we splat.
 _FEAT_A, _FEAT_B, _FEAT_C = 0, 1, 2  # affine depth coefficients
 _FEAT_NX, _FEAT_NZ = 3, 5  # camera-space normal slice [NX:NZ+1]
+
+# The ``extra_signals`` parameter exists in the mpsplat fork (and other forks)
+# but not in upstream gsplat. When it's missing we fall back to a two-pass
+# rasterization in ``rasterization_rade_gs``.
+_HAS_EXTRA_SIGNALS = "extra_signals" in _inspect.signature(rasterization).parameters
 
 
 def _world_covars(
@@ -334,15 +341,19 @@ def rasterization_rade_gs(
         if colors.dim() == 3:
             colors = colors.unsqueeze(0).expand(C, N, colors.shape[-2], 3)
 
-    # 2. Rasterize RGB + the six extra channels in one pass. The rasterizer's
-    #    extra-signals path leaves them un-normalized (Σ wᵢ · featᵢ); we divide
-    #    by the accumulated alpha below to get the expected value.
-    render_colors, render_alphas, meta = rasterization(
+    # 2. Rasterize RGB + the six extra channels.
+    #
+    # Forks that expose ``extra_signals=`` (the mpsplat fork, some others) can
+    # do this in a single pass — the extras come back as Σᵢ wᵢ · featᵢ on the
+    # ``meta`` dict. Upstream gsplat doesn't have that path, so we issue a
+    # second rasterization with the per-Gaussian feature pack treated as
+    # colors. With a zero background, the standard ``RGB`` render mode is
+    # also Σᵢ wᵢ · featᵢ, so the downstream math (dividing by α) is identical.
+    common_kwargs = dict(
         means=means,
         quats=quats,
         scales=scales,
         opacities=opacities,
-        colors=colors,
         viewmats=viewmats,
         Ks=Ks,
         width=width,
@@ -351,16 +362,40 @@ def rasterization_rade_gs(
         far_plane=far_plane,
         radius_clip=radius_clip,
         eps2d=eps2d,
-        sh_degree=sh_degree,
         tile_size=tile_size,
-        backgrounds=backgrounds,
         render_mode="RGB",
         rasterize_mode=rasterize_mode,
         covars=covars,
-        extra_signals=extras,
     )
-    # render_colors: (C, H, W, D); meta["render_extra_signals"]: (C, H, W, 6).
-    blended = meta["render_extra_signals"]  # alpha-accumulated, NOT divided by α.
+
+    if _HAS_EXTRA_SIGNALS:
+        render_colors, render_alphas, meta = rasterization(
+            colors=colors,
+            sh_degree=sh_degree,
+            backgrounds=backgrounds,
+            extra_signals=extras,
+            **common_kwargs,
+        )
+        # render_colors: (C, H, W, D); meta["render_extra_signals"]: (C, H, W, 6).
+        blended = meta["render_extra_signals"]  # alpha-accumulated, NOT divided by α.
+    else:
+        # Pass 1: RGB rendering with the user's colors/SH and backgrounds.
+        render_colors, render_alphas, meta = rasterization(
+            colors=colors,
+            sh_degree=sh_degree,
+            backgrounds=backgrounds,
+            **common_kwargs,
+        )
+        # Pass 2: feature rendering with zero background. ``rasterization``
+        # returns Σᵢ wᵢ · featᵢ + (1 − Σᵢ wᵢ) · bg, so bg = 0 gives the same
+        # alpha-weighted sum the ``extra_signals`` path produces.
+        zero_bg = torch.zeros(C, extras.shape[-1], device=means.device, dtype=dtype)
+        blended, _, _ = rasterization(
+            colors=extras,
+            sh_degree=None,
+            backgrounds=zero_bg,
+            **common_kwargs,
+        )
 
     # 3. Reconstruct the per-pixel along-ray distance t* from the blended affine
     #    coefficients, then collapse to camera-space z-depth via cos θ.
