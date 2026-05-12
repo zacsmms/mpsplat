@@ -66,7 +66,7 @@ class Config:
     n_visualize: int = 8                     # how many side-by-side panels to save
 
 
-_DEPTH_EXTS = (".png", ".exr", ".tif", ".tiff", ".npy")
+_DEPTH_EXTS = (".pt", ".png", ".exr", ".tif", ".tiff", ".npy")
 
 
 def _find_depth_file(depths_dir: Path, image_name: str) -> Optional[Path]:
@@ -83,17 +83,36 @@ def _find_depth_file(depths_dir: Path, image_name: str) -> Optional[Path]:
 
 
 def _load_depth(path: Path, override_scale: Optional[float]) -> np.ndarray:
-    """Return depth in metres as (H, W) float32."""
-    if path.suffix.lower() == ".npy":
+    """Return depth in metres as (H, W) float32.
+
+    Supported formats:
+      * .pt          — torch.save'd tensor or {key: tensor}; assumed meters.
+      * .npy         — numpy array, assumed meters unless ``--depth_scale`` set.
+      * .png / .exr  — uint16 PNG assumed millimeters; everything else as-is.
+    """
+    suffix = path.suffix.lower()
+    raw_was_int = False
+    if suffix == ".pt":
+        obj = torch.load(path, map_location="cpu")
+        if isinstance(obj, dict):
+            # Pick the first 2D tensor we find.
+            obj = next(v for v in obj.values() if hasattr(v, "shape") and len(v.shape) >= 2)
+        d = obj.detach().cpu().numpy() if hasattr(obj, "detach") else np.asarray(obj)
+        if d.ndim > 2:
+            d = d.squeeze()
+        d = d.astype(np.float32)
+    elif suffix == ".npy":
         d = np.load(path).astype(np.float32)
     else:
-        d = imageio.imread(path)
-        if d.ndim == 3:                        # some EXRs come back as (H, W, 1)
-            d = d[..., 0]
-        d = d.astype(np.float32)
+        raw = imageio.imread(path)
+        raw_was_int = raw.dtype.kind in ("u", "i")
+        if raw.ndim == 3:                       # some EXRs come back as (H, W, 1)
+            raw = raw[..., 0]
+        d = raw.astype(np.float32)
+
     if override_scale is not None:
         d = d / override_scale
-    elif d.dtype == np.uint16 or d.max() > 100:  # almost certainly mm
+    elif raw_was_int and d.max() > 100:         # uint PNG → almost certainly mm
         d = d / 1000.0
     return d
 
