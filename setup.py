@@ -61,5 +61,11 @@ setup(
         ],
     },
     packages=find_packages(),
+    # The Metal kernels are read from disk at import time
+    # (`gsplat/mps/_kernels.py`: `_SHADER_DIR = <package>/mps/_shaders`), so the 14
+    # `.metal` sources are runtime files, not build inputs. Without this they are absent
+    # from wheels built straight from the repo (git/sdist installs), and the first MPS
+    # rasterisation fails with FileNotFoundError.
+    package_data={"gsplat.mps": ["_shaders/*.metal"]},
     include_package_data=True,
 )
